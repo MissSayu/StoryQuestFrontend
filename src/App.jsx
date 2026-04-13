@@ -1,15 +1,15 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import "../frontend/styles/global.css";
-import HomepageGuest from "../frontend/pages/HomepageGuest.jsx";
-import HomepageUser from "../frontend/pages/HomepageUser.jsx";
-import ModPage from "../frontend/pages/Modpage.jsx";
-import ProfilePage from "../frontend/pages/Profilepage.jsx";
-import Login from "../frontend/pages/Login.jsx";
-import Register from "../frontend/pages/Register.jsx";
-import PublishPage from "../frontend/pages/Publishpage.jsx";
-import ReadPage from "../frontend/pages/ReadPage.jsx";
-import SearchResultsPage from "../frontend/pages/Seachpage";
+import "./styles/global.css";
+import HomepageGuest from "./pages/HomepageGuest.jsx";
+import HomepageUser from "./pages/HomepageUser.jsx";
+import ModPage from "./pages/Modpage.jsx";
+import ProfilePage from "./pages/Profilepage.jsx";
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
+import PublishPage from "./pages/Publishpage.jsx";
+//import ReadPage from "./pages/ReadPage.jsx";
+//import SearchResultsPage from "./pages/Seachpage";
 import { useAuth } from "./Context/AuthContext";
 
 function AppWrapper() {
@@ -34,11 +34,11 @@ function AppWrapper() {
             <Route path="/publiceren" element={<PublishPage user={user} logout={logout} isMod={isMod} />}
             />
 
-            <Route path="/read/:storyId" element={<ReadPage user={user} logout={logout} />}
-            />
+            {/*<Route path="/read/:storyId" element={<ReadPage user={user} logout={logout} />}*/}
+            {/*/>*/}
 
-            <Route path="/search" element={<SearchResultsPage user={user} logout={logout} />}
-            />
+            {/*<Route path="/search" element={<SearchResultsPage user={user} logout={logout} />}*/}
+            {/*/>*/}
 
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

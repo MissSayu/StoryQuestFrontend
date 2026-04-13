@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import "../styles/profile.css";
-
 import Logo from "../components/Logo";
 import Navbar from "../components/Navbar";
 import AvatarMenu from "../components/Avatar";
