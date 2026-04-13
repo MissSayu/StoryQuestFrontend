@@ -1,3 +1,4 @@
+/* Overall layout */
 .publish-page {
     display: grid;
     grid-template-columns: 280px 1fr;
@@ -23,8 +24,10 @@
     gap: 25px;
 }
 
+/* Title + Genre */
 .row.title-genre {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 15px;
 }
@@ -37,39 +40,30 @@
     font-size: 1rem;
 }
 
-.row.title-genre .genre-dropdown {
-    position: relative;
-    flex: 0 0 auto;
-}
 
-.row.title-genre .genre-dropdown > button {
-    padding: 12px 15px;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.file-upload input[type="file"] {
+/* Hide native file inputs */
+input[type="file"] {
     display: none;
 }
-.story-row {
+
+/* Story & Comic side-by-side layout */
+.story-content-row,
+.comic-content-row {
     display: flex;
     gap: 40px;
     align-items: flex-start;
-    justify-content: flex-start;
-    width: 100%;
+    flex-wrap: wrap; /* allows wrapping on smaller screens */
 }
 
-
-.story-input {
-    flex: 1;
-    min-width: 600px;
+/* Story textarea */
+.story-input-row {
+    flex: none;
+    width: 10px;
 }
 
-.story-input textarea {
+.story-textarea {
     width: 100%;
-    height: 400px;
-    resize: vertical;
+    resize: none;
     padding: 12px 15px;
     border-radius: 10px;
     border: 1px solid #ccc;
@@ -77,17 +71,45 @@
     box-sizing: border-box;
 }
 
-
-.action-column {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-    min-width: 300px;
-    flex-shrink: 0;
+.description-textarea {
+    height: 100px;
 }
 
+.content-textarea {
+    height: 400px;
+}
 
+/* Buttons layout adjustments */
+.story-actions-column,
+.comic-action-column {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.story-actions-column button,
+.comic-action-column button,
+.cover-button,
+.publish-button {
+    flex: 0 0 auto;
+}
+
+/* Comic upload: cover next to comic file */
+.comic-upload {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.comic-upload .file-name {
+    font-size: 0.9rem;
+    max-width: 200px;
+    word-break: break-word;
+}
+
+/* Cover button & preview */
 .cover-button {
     width: 300px;
     height: 230px;
@@ -103,8 +125,52 @@
     border: 1px solid #ccc;
 }
 
+/* Publish buttons */
 .publish-button {
     width: 300px;
     height: 125px;
     font-size: 1.2rem;
+}
+
+/* Row for Publish / Save Draft buttons next to each other */
+.publish-button-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1000px) {
+    .story-content-row,
+    .comic-content-row {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .story-input-row,
+    .comic-action-column,
+    .story-actions-column {
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .cover-button,
+    .cover-preview-large,
+    .publish-button {
+        width: 50%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 600px) {
+    .story-textarea {
+        height: 300px;
+    }
+
+    .cover-button,
+    .cover-preview-large,
+    .publish-button {
+        height: auto;
+    }
 }

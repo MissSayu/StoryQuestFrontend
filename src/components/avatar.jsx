@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../Context/AuthContext";
+import { useAuth } from "../../src/Context/AuthContext";
 import avatarPlaceholder from "../assets/avatar-placeholder.png";
 import "./avatar.css";
 
