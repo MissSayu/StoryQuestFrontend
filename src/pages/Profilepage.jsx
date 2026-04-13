@@ -1,4 +1,3 @@
-// ProfilePage.jsx
 import React from "react";
 import { useParams } from "react-router-dom";
 import "../styles/profile.css";
@@ -12,7 +11,6 @@ import ContentSection from "../components/ContentSection";
 import Button from "../components/button.jsx";
 import SearchBar from "../components/SearchBar";
 
-// Boekcovers
 import book1 from "../assets/book-cover-placeholder.png";
 import book2 from "../assets/book-cover-placeholder.png";
 import book3 from "../assets/book-cover-placeholder.png";
