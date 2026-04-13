@@ -1,34 +1,60 @@
 import React, { useState } from "react";
-import "../styles/login.css";
+import { Formik } from "formik";
+import * as Yup from "yup";
 import Logo from "../components/Logo";
+import "../styles/login.css";
+import { useAuth } from "../Context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [message, setMessage] = useState("");
+    const [error, setError] = useState("");
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-    const handleLogin = async () => {
+    const handleLogin = async (values) => {
+        setError("");
+
         try {
-            const response = await fetch("http://localhost:8080/api/auth/login", {
+            const response = await fetch("http://localhost:8081/api/auth/login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(values),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem("user", JSON.stringify(data));
-                setMessage(`Welkom terug, ${data.username}!`);
+            const data = await response.json();
 
+            if (response.ok) {
+                localStorage.setItem("token", data.token);
+
+                // Volledige gebruiker opslaan in AuthContext
+                login({
+                    id: data.id,
+                    username: data.username,
+                    role: data.role || (data.isMod ? "MOD" : "USER"),
+                    isMod: data.isMod,
+                    avatarUrl: data.avatar_url || data.avatarUrl || null,
+                    bio: data.bio || "",
+                    token: data.token,
+                });
+
+                navigate("/home");
             } else {
-                const error = await response.json();
-                setMessage(error.error || "Onjuiste gebruikersnaam of wachtwoord.");
+                setError(data.message || "Ongeldige gebruikersnaam of wachtwoord");
             }
         } catch (err) {
-            console.error(err);
-            setMessage("Er ging iets mis met de verbinding.");
+            console.error("Login error:", err);
+            setError("Er is iets misgegaan, probeer het opnieuw.");
         }
     };
+
+    const LoginSchema = Yup.object().shape({
+        username: Yup.string().required("Gebruikersnaam is verplicht"),
+        password: Yup.string()
+            .min(6, "Wachtwoord minimaal 6 tekens")
+            .required("Wachtwoord is verplicht"),
+    });
 
     return (
         <div className="center-container">
@@ -37,34 +63,68 @@ function Login() {
             <div className="login-box">
                 <h1>Log in</h1>
 
-                <label htmlFor="username">Gebruikersnaam:</label>
-                <input
-                    type="text"
-                    id="username"
-                    placeholder="Virelight"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
+                <Formik
+                    initialValues={{
+                        username: "",
+                        password: "",
+                    }}
+                    validationSchema={LoginSchema}
+                    onSubmit={handleLogin}
+                >
+                    {({
+                          values,
+                          errors,
+                          touched,
+                          handleChange,
+                          handleBlur,
+                          handleSubmit,
+                      }) => (
+                        <form onSubmit={handleSubmit}>
+                            <label htmlFor="username">Gebruikersnaam:</label>
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                placeholder="Virelight"
+                                value={values.username}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                            />
+                            {errors.username && touched.username && (
+                                <p className="error">{errors.username}</p>
+                            )}
 
-                <label htmlFor="password">Wachtwoord:</label>
-                <input
-                    type="password"
-                    id="password"
-                    placeholder="Wachtwoord"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+                            <label htmlFor="password">Wachtwoord:</label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Wachtwoord"
+                                value={values.password}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                            />
+                            {errors.password && touched.password && (
+                                <p className="error">{errors.password}</p>
+                            )}
 
-                <a href="#" className="forgot-password">Wachtwoord vergeten?</a>
+                            <button type="submit" className="button">
+                                Log in
+                            </button>
 
-                <button className="button" onClick={handleLogin}>Log in</button>
+                            <a href="#" className="forgot-password">
+                                Wachtwoord vergeten?
+                            </a>
 
-                {message && <p style={{ color: "white" }}>{message}</p>}
+                            {error && <p className="error">{error}</p>}
 
-                <div className="register-text">
-                    <p>Nog geen account?</p>
-                    <a href="/register">Registreren</a>
-                </div>
+                            <div className="register-text">
+                                <p>Nog geen account?</p>
+                                <a href="/register">Registreren</a>
+                            </div>
+                        </form>
+                    )}
+                </Formik>
             </div>
         </div>
     );

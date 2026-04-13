@@ -2,13 +2,13 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/global.css";
 import HomepageGuest from "./pages/HomepageGuest.jsx";
-import HomepageUser from "./pages/HomepageUser";
-import ModPage from "./pages/Modpage";
+import HomepageUser from "./pages/HomepageUser.jsx";
+import ModPage from "./pages/Modpage.jsx";
 import ProfilePage from "./pages/Profilepage.jsx";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 import PublishPage from "./pages/Publishpage.jsx";
-import ReadPage from "./pages/ReadPage.jsx";
+//import ReadPage from "./pages/ReadPage.jsx";
 //import SearchResultsPage from "./pages/Seachpage";
 import { useAuth } from "./Context/AuthContext";
 
@@ -34,8 +34,8 @@ function AppWrapper() {
             <Route path="/publiceren" element={<PublishPage user={user} logout={logout} isMod={isMod} />}
             />
 
-            <Route path="/read/:storyId" element={<ReadPage user={user} logout={logout} />}
-            />
+            {/*<Route path="/read/:storyId" element={<ReadPage user={user} logout={logout} />}*/}
+            {/*/>*/}
 
             {/*<Route path="/search" element={<SearchResultsPage user={user} logout={logout} />}*/}
             {/*/>*/}
