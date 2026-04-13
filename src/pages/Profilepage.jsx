@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "../styles/profile.css";
 import Logo from "../components/Logo";
@@ -7,61 +7,121 @@ import AvatarMenu from "../components/Avatar";
 import ProfileSidebar from "../components/sidemenu.jsx";
 import StatsCard from "../components/statscard.jsx";
 import ContentSection from "../components/ContentSection";
-import Button from "../components/button.jsx";
-import SearchBar from "../components/SearchBar";
+import EditProfileForm from "../components/editprofile";
+import api from "../../src/api";
 
-import book1 from "../assets/book-cover-placeholder.png";
-import book2 from "../assets/book-cover-placeholder.png";
-import book3 from "../assets/book-cover-placeholder.png";
-
-export default function ProfilePage({ user, logout, isMod = false }) {
+export default function ProfilePage({ user: loggedInUser, logout, isMod }) {
     const { username } = useParams();
+    const [profileUser, setProfileUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-    function handleSearch(query) {
+
+    useEffect(() => {
+        const fetchProfileUser = async () => {
+            setLoading(true);
+            try {
+                const res = await api.get(`/users/username/${username}`);
+                setProfileUser(res.data);
+            } catch (err) {
+                console.error("Failed to fetch profile user:", err);
+                setProfileUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (username) fetchProfileUser();
+    }, [username]);
+
+    const handleEditProfile = () => {
+        if (!loggedInUser || loggedInUser.id !== profileUser?.id) return;
+        setIsEditingProfile(true);
+    };
+
+    const handleCancelEdit = () => setIsEditingProfile(false);
+
+    const handleSaveProfile = (updatedUser) => {
+        setIsEditingProfile(false);
+        setProfileUser(updatedUser);
+
+
+        if (loggedInUser && updatedUser.id === loggedInUser.id) {
+            loggedInUser.username = updatedUser.username;
+            loggedInUser.bio = updatedUser.bio;
+            loggedInUser.avatarUrl = updatedUser.avatarUrl;
+            localStorage.setItem("username", updatedUser.username);
+        }
+    };
+
+    const handleSearch = (query) => {
         console.log("Zoekterm:", query);
-    }
-
-    const stories = [
-        { title: "Mystic Adventures", cover: book1 },
-        { title: "Romance in the City", cover: book2 },
-        { title: "Fantasy Tales", cover: book3 },
-    ];
-
-    const comics = [
-        { title: "Cyberpunk Dreams", cover: book2 },
-        { title: "Space Odyssey", cover: book3 },
-        { title: "Magic Chronicles", cover: book1 },
-    ];
+    };
 
     return (
         <>
-            {/* Header */}
             <header className="header-user">
-                <div className="header-left">
-                    <Logo/>
-                </div>
-
-                <div className="header-center">
-                    <Navbar onSearch={handleSearch}/>
-                </div>
-
+                <div className="header-left"><Logo /></div>
+                <div className="header-center"><Navbar onSearch={handleSearch} /></div>
                 <div className="header-right">
-                    <AvatarMenu user={user} isMod={isMod} logout={logout}/>
+                    <AvatarMenu user={loggedInUser || null} logout={logout} isMod={isMod} />
                 </div>
             </header>
 
             <div className="profile-page">
-                <ProfileSidebar username="SayuNeko"/>
+                <ProfileSidebar
+                    user={loggedInUser || null}
+                    author={profileUser || null}
+                    onEditProfile={handleEditProfile}
+                />
 
                 <main className="profile-main">
-                    <div className="profile-stats">
-                        <StatsCard type="stories" value="6 "/>
-                        <StatsCard type="followers" value="120 "/>
-                        <StatsCard type="following" value="45 "/>
-                    </div>
+                    {isEditingProfile ? (
+                        <EditProfileForm
+                            user={loggedInUser}
+                            onCancel={handleCancelEdit}
+                            onSave={handleSaveProfile}
+                        />
+                    ) : loading ? (
+                        <p style={{ marginLeft: "15px" }}>Gebruiker laden...</p>
+                    ) : profileUser ? (
+                        <>
+                            <div className="profile-stats">
+                                <StatsCard
+                                    type="stories"
+                                    username={profileUser.username}
+                                    loggedInUser={loggedInUser}
+                                />
+                                <StatsCard
+                                    type="followers"
+                                    userId={profileUser.id}
+                                />
+                                <StatsCard
+                                    type="following"
+                                    userId={profileUser.id}
+                                />
+                            </div>
 
-                    <ContentSection title="Verhalen" items={stories} onSearch={handleSearch}/>
-                    <ContentSection title="Comics" items={comics} onSearch={handleSearch}/>
+                            <ContentSection
+                                title="Verhalen"
+                                username={profileUser.username}
+                                type="story"
+                                onSearch={handleSearch}
+                                user={loggedInUser}
+                            />
+
+
+                            <ContentSection
+                                title="Comics"
+                                username={profileUser.username}
+                                type="comic"
+                                onSearch={handleSearch}
+                                user={loggedInUser}
+                            />
+                        </>
+                    ) : (
+                        <p style={{ marginLeft: "15px" }}>Gebruiker niet gevonden.</p>
+                    )}
                 </main>
             </div>
         </>

@@ -21,8 +21,6 @@
 
 }
 
-
-
 .content-grid {
     display: flex;
     gap: 15px;
@@ -82,4 +80,17 @@
 
 .scroll-btn:hover {
     background: #ff9ecf;
+}
+
+.content-item.draft {
+    opacity: 0.6;
+}
+
+.draft-badge {
+    background-color: orange;
+    color: white;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    margin-left: 5px;
 }
