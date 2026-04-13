@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
             isMod: userData.isMod || false,
             avatarUrl: userData.avatarUrl || null,
             bio: userData.bio || "",
-            token: userData.token, // 🔥 IMPORTANT
+            token: userData.token,
         };
 
         localStorage.setItem("user", JSON.stringify(fullUser));
