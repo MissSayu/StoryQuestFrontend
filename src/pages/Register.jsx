@@ -17,7 +17,7 @@ function Register() {
             });
             const data = await response.json();
             if (response.ok) {
-                window.location.href = "/login"; // na registratie gelijk naar login
+                window.location.href = "/login"; // na registratie gelijk naar naar login
             } else {
                 setError(data.message || "Er is iets misgegaan bij registratie");
             }
@@ -29,7 +29,7 @@ function Register() {
 
     const RegisterSchema = Yup.object().shape({
         email: Yup.string()
-            .email("Ongeldig email adres")
+            .email("Ongeldig emailadres")
             .required("Email is verplicht"),
         username: Yup.string().required("Gebruikersnaam is verplicht"),
         password: Yup.string()
