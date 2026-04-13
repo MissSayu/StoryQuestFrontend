@@ -4,12 +4,12 @@ import "./styles/global.css";
 import HomepageGuest from "./pages/HomepageGuest.jsx";
 import HomepageUser from "./pages/HomepageUser.jsx";
 import ModPage from "./pages/Modpage.jsx";
-import ProfilePage from "./pages/Profilepage.jsx";
+import ProfilePage from ".//pages/Profilepage.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import PublishPage from "./pages/Publishpage.jsx";
-//import ReadPage from "./pages/ReadPage.jsx";
-//import SearchResultsPage from "./pages/Seachpage";
+import ReadPage from "./pages/ReadPage.jsx";
+import SearchResultsPage from "./pages/Seachpage";
 import { useAuth } from "./Context/AuthContext";
 
 function AppWrapper() {
@@ -34,11 +34,11 @@ function AppWrapper() {
             <Route path="/publiceren" element={<PublishPage user={user} logout={logout} isMod={isMod} />}
             />
 
-            {/*<Route path="/read/:storyId" element={<ReadPage user={user} logout={logout} />}*/}
-            {/*/>*/}
+            <Route path="/read/:storyId" element={<ReadPage user={user} logout={logout} />}
+            />
 
-            {/*<Route path="/search" element={<SearchResultsPage user={user} logout={logout} />}*/}
-            {/*/>*/}
+            <Route path="/search" element={<SearchResultsPage user={user} logout={logout} />}
+            />
 
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
