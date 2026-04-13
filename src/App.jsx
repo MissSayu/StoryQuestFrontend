@@ -4,12 +4,12 @@ import "./styles/global.css";
 import HomepageGuest from "./pages/HomepageGuest.jsx";
 import HomepageUser from "./pages/HomepageUser.jsx";
 import ModPage from "./pages/Modpage.jsx";
-import ProfilePage from "./pages/Profilepage.jsx";
+import ProfilePage from ".//pages/Profilepage.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import PublishPage from "./pages/Publishpage.jsx";
 import ReadPage from "./pages/ReadPage.jsx";
-import SearchResultsPage from "./pages/Seachpage.jsx";
+import SearchResultsPage from "./pages/Seachpage";
 import { useAuth } from "./Context/AuthContext";
 
 function AppWrapper() {
