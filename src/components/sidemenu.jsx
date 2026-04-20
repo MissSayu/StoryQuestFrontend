@@ -6,7 +6,7 @@ import profileIcon from "../assets/person-icon.png";
 import settingsIcon from "../assets/settings-icon.png";
 import "./sidebarmenu.css";
 import Button from "../components/button.jsx";
-import api from "../../src/api"; // axios instance met JWT
+import api from "../../src/api";
 
 function ProfileSidebar({
                             user,
@@ -15,6 +15,7 @@ function ProfileSidebar({
                             onSelectEpisode,
                             selectedEpisode,
                             onEditProfile,
+                            showEditButton = false,
                         }) {
     const navigate = useNavigate();
     const isReadPage = !!episodes;
@@ -25,13 +26,17 @@ function ProfileSidebar({
     const [profileImg, setProfileImg] = useState(avatarPlaceholder);
     const [isFollowing, setIsFollowing] = useState(false);
 
-    // Update profielafbeelding
     useEffect(() => {
         const url = viewedUser?.avatarUrl;
-        setProfileImg(url ? (url.startsWith("http") ? url : `http://localhost:8081${url}`) : avatarPlaceholder);
+        setProfileImg(
+            url
+                ? url.startsWith("http")
+                    ? url
+                    : `http://localhost:8081${url}`
+                : avatarPlaceholder
+        );
     }, [viewedUser?.avatarUrl]);
 
-    // Check of de ingelogde gebruiker de auteur volgt
     useEffect(() => {
         if (!author || !user || author.id === user.id) return;
 
@@ -43,10 +48,10 @@ function ProfileSidebar({
                 console.error("Error checking follow status:", err);
             }
         };
+
         checkFollowStatus();
     }, [author, user]);
 
-    // Volg/ontvolg auteur
     const toggleFollowAuthor = async () => {
         if (!user || !author) {
             alert("Je moet ingelogd zijn om een auteur te volgen.");
@@ -67,6 +72,10 @@ function ProfileSidebar({
         if (viewedUser) navigate(`/profile/${viewedUser.username}`);
     };
 
+    const goToOwnProfile = () => {
+        if (user) navigate(`/profile/${user.username}`);
+    };
+
     return (
         <aside className="profile-sidebar">
             <div className="profile-info">
@@ -84,6 +93,7 @@ function ProfileSidebar({
                 >
                     {displayName}
                 </h3>
+
                 <p>{bio}</p>
 
                 {author && user && author.id !== user.id ? (
@@ -91,8 +101,14 @@ function ProfileSidebar({
                         {isFollowing ? "Auteur ontvolgen" : "Volg auteur"}
                     </Button>
                 ) : (
-                    user && viewedUser.id === user.id && (
-                        <Button onClick={onEditProfile}>Profiel bewerken</Button>
+                    user &&
+                    viewedUser &&
+                    viewedUser.id === user.id && (
+                        showEditButton ? (
+                            <Button onClick={onEditProfile}>Profiel bewerken</Button>
+                        ) : (
+                            <Button onClick={goToOwnProfile}>Profiel</Button>
+                        )
                     )
                 )}
             </div>
@@ -113,7 +129,7 @@ function ProfileSidebar({
                 </nav>
             )}
 
-            {!isReadPage && user && viewedUser.id === user.id && (
+            {!isReadPage && user && viewedUser && viewedUser.id === user.id && (
                 <nav className="sidebar-menu">
                     <a href="#">
                         <img src={statisticsIcon} alt="Dashboard" className="menu-icon" />
