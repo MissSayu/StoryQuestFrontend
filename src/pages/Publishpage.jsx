@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import Navbar from "../components/Navbar";
 import AvatarMenu from "../components/Avatar";
@@ -10,6 +11,8 @@ import PickStoryDropdown from "../components/pickstorydropdown";
 import api from "../../src/api";
 
 export default function PublishPage({ user: initialUser, logout, isMod }) {
+    const navigate = useNavigate();
+
     const [user, setUser] = useState(
         typeof initialUser === "object" ? initialUser : null
     );
@@ -28,6 +31,9 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
     const [userStories, setUserStories] = useState([]);
     const [selectedStoryId, setSelectedStoryId] = useState("");
 
+    const [popupOpen, setPopupOpen] = useState(false);
+    const [popupMessage, setPopupMessage] = useState("");
+    const [redirectPath, setRedirectPath] = useState("");
 
     useEffect(() => {
         if (user || !initialUser || typeof initialUser === "object") return;
@@ -36,29 +42,33 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
             try {
                 const { data } = await api.get(`/users/username/${initialUser}`);
                 setUser(data);
-            } catch (err) {
-                console.error("Failed to fetch user:", err);
+            } catch {
+                setPopupMessage("Gebruiker kon niet worden geladen.");
+                setRedirectPath("");
+                setPopupOpen(true);
             }
         };
 
         fetchUserData();
     }, [initialUser, user]);
 
-
     useEffect(() => {
         if (!user) return;
+
         const fetchStories = async () => {
             try {
                 const { data } = await api.get(`/stories/user/${user.id}`);
                 setUserStories(data);
-            } catch (err) {
-                console.error("Failed to fetch stories:", err);
+            } catch {
+                setPopupMessage("Verhalen konden niet worden geladen.");
+                setRedirectPath("");
+                setPopupOpen(true);
             }
         };
+
         fetchStories();
     }, [user]);
 
-    // Preview cover image
     useEffect(() => {
         if (!cover) {
             setCoverPreview(null);
@@ -71,7 +81,6 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
         return () => URL.revokeObjectURL(objectUrl);
     }, [cover]);
 
-
     const handleCoverUpload = (e) => {
         if (e.target.files[0]) setCover(e.target.files[0]);
     };
@@ -80,9 +89,20 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
         if (e.target.files[0]) setFile(e.target.files[0]);
     };
 
-    // Opslaan als Draft of Publiceren
+    const handlePopupClose = () => {
+        setPopupOpen(false);
+        if (redirectPath) {
+            navigate(redirectPath);
+        }
+    };
+
     const saveStory = async (status) => {
-        if (!user) return alert("User data not loaded yet!");
+        if (!user) {
+            setPopupMessage("User data not loaded yet!");
+            setPopupOpen(true);
+            return;
+        }
+
         if (
             !title ||
             (type === "story" &&
@@ -91,11 +111,13 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                 status === "published") ||
             (type === "comic" && !file && status === "published")
         ) {
-            return alert(
+            setPopupMessage(
                 status === "draft"
                     ? "Vul minimaal titel in voor draft!"
                     : "Vul alle verplichte velden in!"
             );
+            setPopupOpen(true);
+            return;
         }
 
         try {
@@ -116,40 +138,28 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                 formData.append("storyContent", newEpisodeContent || "");
             }
 
-            if (cover) formData.append("coverImage", cover);
+            if (cover) {
+                formData.append("coverImage", cover);
+            }
 
             const { data: savedStoryOrEpisode } = await api.post(
                 "/stories/create",
-                formData,
-                { headers: { "Content-Type": "multipart/form-data" } }
+                formData
             );
 
-            console.log(
-                `${status === "draft" ? "Draft" : "Published"} saved:`,
-                savedStoryOrEpisode
-            );
-
-            //  Upload comic file indien nodig
             if (type === "comic" && file) {
                 const comicForm = new FormData();
                 comicForm.append("file", file);
 
                 await api.post(
                     `/episodes/${savedStoryOrEpisode.id}/uploadComic`,
-                    comicForm,
-                    { headers: { "Content-Type": "multipart/form-data" } }
+                    comicForm
                 );
-
-                console.log("Comic uploaded successfully!");
             }
 
-            alert(
-                status === "draft"
-                    ? "Opgeslagen als draft!"
-                    : "Verhaal/comic gepubliceerd!"
-            );
+            const storyId =
+                mode === "newStory" ? savedStoryOrEpisode.id : selectedStoryId;
 
-            // Reset form
             setTitle("");
             setDescription("");
             setStoryContent("");
@@ -158,9 +168,22 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
             setCover(null);
             setFile(null);
             setSelectedStoryId("");
+
+            setPopupMessage(
+                status === "draft"
+                    ? "Opgeslagen als draft!"
+                    : "Verhaal/comic gepubliceerd!"
+            );
+            setRedirectPath(`/read/${storyId}`);
+            setPopupOpen(true);
+
         } catch (err) {
-            console.error(err);
-            alert("Er is iets misgegaan bij opslaan: " + err.message);
+            setPopupMessage(
+                "Er is iets misgegaan bij opslaan: " +
+                (err.response?.data || err.message)
+            );
+            setRedirectPath("");
+            setPopupOpen(true);
         }
     };
 
@@ -190,12 +213,9 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                     <section className="publish-section">
                         <h2>
                             {mode === "newStory"
-                                ? `Publiceer een nieuw ${
-                                    type === "story" ? "verhaal" : "comic"
-                                }`
+                                ? `Publiceer een nieuw ${type === "story" ? "verhaal" : "comic"}`
                                 : "Nieuw Hoofdstuk"}
                         </h2>
-
 
                         <div className="row type-selector">
                             <label>
@@ -204,8 +224,7 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                     value="newStory"
                                     checked={mode === "newStory"}
                                     onChange={() => setMode("newStory")}
-                                />{" "}
-                                Nieuw verhaal
+                                /> Nieuw verhaal
                             </label>
                             <label>
                                 <input
@@ -213,11 +232,9 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                     value="newEpisode"
                                     checked={mode === "newEpisode"}
                                     onChange={() => setMode("newEpisode")}
-                                />{" "}
-                                Nieuw hoofdstuk
+                                /> Nieuw hoofdstuk
                             </label>
                         </div>
-
 
                         <div className="row type-selector">
                             <label>
@@ -226,8 +243,7 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                     value="story"
                                     checked={type === "story"}
                                     onChange={() => setType("story")}
-                                />{" "}
-                                Verhaal
+                                /> Verhaal
                             </label>
                             <label>
                                 <input
@@ -235,8 +251,7 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                     value="comic"
                                     checked={type === "comic"}
                                     onChange={() => setType("comic")}
-                                />{" "}
-                                Comic
+                                /> Comic
                             </label>
                         </div>
 
@@ -254,16 +269,9 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                         selectedGenre={genre}
                                         setSelectedGenre={setGenre}
                                         options={[
-                                            "Fantasy",
-                                            "Romance",
-                                            "Sci-Fi",
-                                            "Mystery",
-                                            "Horror",
-                                            "Western",
-                                            "Adventure",
-                                            "Crime",
-                                            "Spy",
-                                            "Thriller",
+                                            "Fantasy", "Romance", "Sci-Fi", "Mystery",
+                                            "Horror", "Western", "Adventure", "Crime",
+                                            "Spy", "Thriller",
                                         ]}
                                     />
                                 ) : (
@@ -289,7 +297,7 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                             ((mode === "newStory" && (
                                     <textarea
                                         className="story-textarea content-textarea"
-                                        placeholder="Schrijf hier het eerste hoofdstuk (episode 1)..."
+                                        placeholder="Schrijf hier het eerste hoofdstuk..."
                                         value={storyContent}
                                         onChange={(e) => setStoryContent(e.target.value)}
                                     />
@@ -297,11 +305,9 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                 (mode === "newEpisode" && (
                                     <textarea
                                         className="story-textarea content-textarea"
-                                        placeholder="Schrijf hier het nieuwe hoofdstuk..."
+                                        placeholder="Nieuw hoofdstuk..."
                                         value={newEpisodeContent}
-                                        onChange={(e) =>
-                                            setNewEpisodeContent(e.target.value)
-                                        }
+                                        onChange={(e) => setNewEpisodeContent(e.target.value)}
                                     />
                                 )))}
 
@@ -314,14 +320,10 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                         accept=".pdf,.cbz,.cbr,.png,.jpg"
                                         onChange={handleFileUpload}
                                     />
-                                    <Button
-                                        asLabel
-                                        htmlFor="comicUpload"
-                                        className="cover-button"
-                                    >
+                                    <Button asLabel htmlFor="comicUpload">
                                         Upload Comic File
                                     </Button>
-                                    {file && <span className="file-name">{file.name}</span>}
+                                    {file && <span>{file.name}</span>}
                                 </div>
                             )}
 
@@ -331,9 +333,10 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                 accept="image/*"
                                 onChange={handleCoverUpload}
                             />
-                            <Button asLabel htmlFor="coverUpload" className="cover-button">
+                            <Button asLabel htmlFor="coverUpload">
                                 Upload Cover
                             </Button>
+
                             {coverPreview && (
                                 <img
                                     src={coverPreview}
@@ -342,16 +345,26 @@ export default function PublishPage({ user: initialUser, logout, isMod }) {
                                 />
                             )}
 
-                            <Button onClick={handlePublish} className="publish-button">
+                            <Button onClick={handlePublish}>
                                 Publiceren
                             </Button>
-                            <Button onClick={handleSaveDraft} className="publish-button">
+                            <Button onClick={handleSaveDraft}>
                                 Opslaan als draft
                             </Button>
                         </div>
                     </section>
                 </main>
             </div>
+
+            {popupOpen && (
+                <div className="custom-popup-overlay">
+                    <div className="custom-popup">
+                        <h3>Melding</h3>
+                        <p>{popupMessage}</p>
+                        <button onClick={handlePopupClose}>OK</button>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

@@ -12,14 +12,15 @@ import api from "../../src/api";
 
 export default function ProfilePage({ user: loggedInUser, logout, isMod }) {
     const { username } = useParams();
+
     const [profileUser, setProfileUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-
     useEffect(() => {
         const fetchProfileUser = async () => {
             setLoading(true);
+
             try {
                 const res = await api.get(`/users/username/${username}`);
                 setProfileUser(res.data);
@@ -31,26 +32,45 @@ export default function ProfilePage({ user: loggedInUser, logout, isMod }) {
             }
         };
 
-        if (username) fetchProfileUser();
+        if (username) {
+            fetchProfileUser();
+        }
     }, [username]);
 
     const handleEditProfile = () => {
-        if (!loggedInUser || loggedInUser.id !== profileUser?.id) return;
+        if (!loggedInUser || !profileUser || loggedInUser.id !== profileUser.id) {
+            return;
+        }
         setIsEditingProfile(true);
     };
 
-    const handleCancelEdit = () => setIsEditingProfile(false);
+    const handleCancelEdit = () => {
+        setIsEditingProfile(false);
+    };
 
     const handleSaveProfile = (updatedUser) => {
         setIsEditingProfile(false);
         setProfileUser(updatedUser);
 
-
         if (loggedInUser && updatedUser.id === loggedInUser.id) {
             loggedInUser.username = updatedUser.username;
             loggedInUser.bio = updatedUser.bio;
             loggedInUser.avatarUrl = updatedUser.avatarUrl;
+
             localStorage.setItem("username", updatedUser.username);
+
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    parsedUser.username = updatedUser.username;
+                    parsedUser.bio = updatedUser.bio;
+                    parsedUser.avatarUrl = updatedUser.avatarUrl;
+                    localStorage.setItem("user", JSON.stringify(parsedUser));
+                } catch (err) {
+                    console.error("Failed to update localStorage user:", err);
+                }
+            }
         }
     };
 
@@ -61,8 +81,14 @@ export default function ProfilePage({ user: loggedInUser, logout, isMod }) {
     return (
         <>
             <header className="header-user">
-                <div className="header-left"><Logo /></div>
-                <div className="header-center"><Navbar onSearch={handleSearch} /></div>
+                <div className="header-left">
+                    <Logo />
+                </div>
+
+                <div className="header-center">
+                    <Navbar onSearch={handleSearch} />
+                </div>
+
                 <div className="header-right">
                     <AvatarMenu user={loggedInUser || null} logout={logout} isMod={isMod} />
                 </div>
@@ -73,6 +99,7 @@ export default function ProfilePage({ user: loggedInUser, logout, isMod }) {
                     user={loggedInUser || null}
                     author={profileUser || null}
                     onEditProfile={handleEditProfile}
+                    showEditButton={loggedInUser?.id === profileUser?.id}
                 />
 
                 <main className="profile-main">
@@ -109,7 +136,6 @@ export default function ProfilePage({ user: loggedInUser, logout, isMod }) {
                                 onSearch={handleSearch}
                                 user={loggedInUser}
                             />
-
 
                             <ContentSection
                                 title="Comics"

@@ -16,33 +16,35 @@ function HomepageUser({ user, logout, isMod }) {
     useEffect(() => {
         async function fetchStories() {
             try {
-                // Fetch stories (max 10, zodat we genoeg hebben om 3 te tonen)
                 const res = await fetch("http://localhost:8081/api/stories/random?count=10", {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
                 });
+
                 if (!res.ok) throw new Error("Failed to fetch stories");
+
                 const data = await res.json();
 
-                // Alleen gepubliceerde stories
-                const publishedStories = data.filter(story => story.status === "published");
+                const publishedStories = data.filter(
+                    (story) => story.status === "published"
+                );
 
-                // Vul aan tot 3 met placeholders
                 const displayedStories = [...publishedStories.slice(0, 3)];
+
                 while (displayedStories.length < 3) {
                     displayedStories.push({
                         id: `placeholder-${displayedStories.length}`,
                         title: "Coming soon",
                         coverImage: null,
-                        author: { username: "Onbekend" }
+                        author: { username: "Onbekend" },
                     });
                 }
 
                 setStories(displayedStories);
             } catch (err) {
                 console.error("Failed to load stories:", err);
-                // Als token niet klopt
+
                 if (err.response?.status === 401) {
                     logout();
                     navigate("/login");
@@ -51,7 +53,7 @@ function HomepageUser({ user, logout, isMod }) {
         }
 
         fetchStories();
-    }, []);
+    }, [logout, navigate]);
 
     return (
         <div className="homepage">
@@ -76,15 +78,19 @@ function HomepageUser({ user, logout, isMod }) {
                             >
                                 <img
                                     src={
-                                        story.coverImage
+                                        story.coverImage?.trim()
                                             ? `http://localhost:8081${story.coverImage.replace(
                                                 "src/main/resources/static",
                                                 ""
                                             )}`
-                                            : "http://localhost:8081/uploads/default-cover.png"
+                                            : "http://localhost:8081/uploads/covers/book-cover-placeholder.png"
                                     }
                                     alt={story.title || "Story Cover"}
                                     className="book-cover"
+                                    onError={(e) => {
+                                        e.target.src =
+                                            "http://localhost:8081/uploads/covers/book-cover-placeholder.png";
+                                    }}
                                 />
                                 <p>{story.title}</p>
                                 <small>Door {story.author?.username || "Onbekend"}</small>

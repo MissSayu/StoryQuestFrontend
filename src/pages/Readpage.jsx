@@ -12,7 +12,9 @@ import api from "../../src/api";
 function ReadPage({ user, logout, isMod }) {
     const { storyId } = useParams();
     const navigate = useNavigate();
+
     const [story, setStory] = useState(null);
+    const [episodes, setEpisodes] = useState([]);
     const [selectedEpisode, setSelectedEpisode] = useState(null);
     const [isFollowingStory, setIsFollowingStory] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -21,31 +23,52 @@ function ReadPage({ user, logout, isMod }) {
     useEffect(() => {
         if (!storyId) return;
 
-        const fetchStory = async () => {
+        const fetchStoryAndEpisodes = async () => {
             setLoading(true);
             setError(null);
+
             try {
-                const res = await api.get(`/stories/${storyId}`);
-                const data = res.data;
-                setStory(data);
+                const [storyRes, episodesRes] = await Promise.all([
+                    api.get(`/stories/${storyId}`),
+                    api.get(`/episodes/story/${storyId}`)
+                ]);
 
-                document.title = `${data.title} - Tales of Eyrndor`;
+                const storyData = storyRes.data;
+                const episodesData = episodesRes.data || [];
 
-                setSelectedEpisode({
-                    id: 0,
-                    title: "Description",
-                    content: data.description || "",
-                    coverUrl: data.coverImage || "/uploads/covers/book-cover-placeholder.png",
-                });
+                setStory(storyData);
+                setEpisodes(episodesData);
+
+                document.title = `${storyData.title} - Tales of Eyrndor`;
+
+                const descriptionEpisode = episodesData.find(
+                    (ep) => ep.episodeOrder === 0 || ep.title?.toLowerCase() === "description"
+                );
+
+                if (descriptionEpisode) {
+                    setSelectedEpisode(descriptionEpisode);
+                } else {
+                    setSelectedEpisode({
+                        id: 0,
+                        title: "Description",
+                        content: storyData.description || "",
+                        coverUrl: storyData.coverImage || "/uploads/covers/book-cover-placeholder.png",
+                        episodeOrder: 0,
+                    });
+                }
             } catch (err) {
-                console.error("Failed to fetch story:", err);
-                setError(err.response?.status === 403 ? "Toegang geweigerd" : "Verhaal niet gevonden");
+                console.error("Failed to fetch story or episodes:", err);
+                setError(
+                    err.response?.status === 403
+                        ? "Toegang geweigerd"
+                        : "Verhaal niet gevonden"
+                );
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchStory();
+        fetchStoryAndEpisodes();
     }, [storyId]);
 
     useEffect(() => {
@@ -71,6 +94,7 @@ function ReadPage({ user, logout, isMod }) {
 
     const toggleFollowStory = async () => {
         if (!user) return;
+
         try {
             const url = `/follow/${user.id}/${isFollowingStory ? "unfollow" : "follow"}/${storyId}`;
             await api.post(url);
@@ -87,13 +111,14 @@ function ReadPage({ user, logout, isMod }) {
 
     if (loading) return <p style={{ margin: "15px" }}>Laden...</p>;
     if (error) return <p style={{ margin: "15px", color: "red" }}>{error}</p>;
+    if (!story) return <p style={{ margin: "15px", color: "red" }}>Verhaal niet gevonden</p>;
 
-    const hasDescriptionEpisode = story.episodes?.some(
-        (ep) => ep.episodeOrder === 0 || ep.title.toLowerCase() === "description"
+    const hasDescriptionEpisode = episodes.some(
+        (ep) => ep.episodeOrder === 0 || ep.title?.toLowerCase() === "description"
     );
 
     let sidebarEpisodes = hasDescriptionEpisode
-        ? [...story.episodes]
+        ? [...episodes]
         : [
             {
                 id: 0,
@@ -102,7 +127,7 @@ function ReadPage({ user, logout, isMod }) {
                 coverUrl: story.coverImage || "/uploads/covers/book-cover-placeholder.png",
                 episodeOrder: 0,
             },
-            ...(story.episodes || []),
+            ...episodes,
         ];
 
     sidebarEpisodes = sidebarEpisodes.sort(
@@ -118,6 +143,12 @@ function ReadPage({ user, logout, isMod }) {
                 ? story.coverImage
                 : `http://localhost:8081${story.coverImage}`
             : "http://localhost:8081/uploads/covers/book-cover-placeholder.png";
+
+    const comicSrc = selectedEpisode?.comicUrl
+        ? selectedEpisode.comicUrl.startsWith("http")
+            ? selectedEpisode.comicUrl
+            : `http://localhost:8081${selectedEpisode.comicUrl}`
+        : null;
 
     return (
         <div className="readpage">
@@ -142,6 +173,9 @@ function ReadPage({ user, logout, isMod }) {
                             src={coverSrc}
                             alt={selectedEpisode?.title || story.title}
                             className="story-cover"
+                            onError={(e) => {
+                                e.target.src = "http://localhost:8081/uploads/covers/book-cover-placeholder.png";
+                            }}
                         />
 
                         <h2>{story.title}</h2>
@@ -158,14 +192,40 @@ function ReadPage({ user, logout, isMod }) {
                         )}
                     </div>
 
-                    {user && selectedEpisode && selectedEpisode.title !== "Description" && (
+                    {selectedEpisode && selectedEpisode.title !== "Description" && (
                         <div className="story-body">
                             <div className="episode-wrapper">
                                 <div className="episode-content">
                                     <h3>{selectedEpisode.title}</h3>
-                                    <p>{selectedEpisode.content}</p>
+
+                                    {comicSrc ? (
+                                        <div className="comic-content">
+                                            {comicSrc.toLowerCase().endsWith(".pdf") ? (
+                                                <iframe
+                                                    src={comicSrc}
+                                                    title={selectedEpisode.title}
+                                                    width="100%"
+                                                    height="800px"
+                                                    style={{ border: "none", borderRadius: "12px" }}
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={comicSrc}
+                                                    alt={selectedEpisode.title}
+                                                    style={{
+                                                        maxWidth: "100%",
+                                                        borderRadius: "12px",
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p>{selectedEpisode.content}</p>
+                                    )}
                                 </div>
-                                <CommentSection episodeId={selectedEpisode.id} user={user} />
+
+                                {user && <CommentSection episodeId={selectedEpisode.id} user={user} />}
                             </div>
                         </div>
                     )}
